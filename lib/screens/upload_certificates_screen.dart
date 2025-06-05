@@ -39,66 +39,22 @@ class _UploadCertificatesScreenState extends State<UploadCertificatesScreen> {
   ];
 
   // ✅ New: map to hold uploaded filenames by branch and file type
-  Map<String, Map<String, String>> uploadedFiles = {};
+  Map<String, Map<String, PlatformFile>> uploadedFiles = {};
 
-  Future<void> uploadFile(String branch, String fileType) async {
-    print('📤 Upload triggered for $fileType at $branch');
+  Future<void> pickFile(String branch, String fileType) async {
+    final result = await FilePicker.platform.pickFiles(withData: true);
+    if (result == null || result.files.isEmpty) return;
 
-    final result = await FilePicker.platform.pickFiles(withReadStream: true);
-    if (result == null) {
-      print('❌ No file picked');
-      return;
-    }
+    final file = result.files.single;
 
-    final fileName = result.files.single.name;
-    final fileStream = http.ByteStream(result.files.single.readStream!);
-    final fileLength = result.files.single.size;
+    setState(() {
+      uploadedFiles[branch] = uploadedFiles[branch] ?? {};
+      uploadedFiles[branch]![fileType] = file;
+    });
 
-    print('📁 Picked file: $fileName');
-    print('📦 File size: $fileLength bytes');
-
-    final uri = Uri.parse('${dotenv.env['API_URL']}/upload_certificate');
-    final request =
-        http.MultipartRequest('POST', uri)
-          ..fields['user_id'] = widget.userId.toString()
-          ..fields['file_type'] = fileType
-          ..fields['bank'] = selectedBank ?? ''
-          ..fields['branch'] = branch
-          ..fields['month'] = selectedMonth ?? ''
-          ..files.add(
-            http.MultipartFile(
-              'file',
-              fileStream,
-              fileLength,
-              filename: fileName,
-            ),
-          );
-
-    try {
-      print('🚀 Sending request...');
-      final response = await request.send();
-      print('✅ Response status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        setState(() {
-          uploadedFiles[branch] = uploadedFiles[branch] ?? {};
-          uploadedFiles[branch]![fileType] = fileName;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$fileType uploaded for $branch')),
-        );
-      } else {
-        print('❌ Upload failed with status: ${response.statusCode}');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed for $branch')));
-      }
-    } catch (e) {
-      print('❌ Upload failed with error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error during upload: $e')));
-    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$fileType selected for $branch')));
   }
 
   @override
@@ -213,7 +169,7 @@ class _UploadCertificatesScreenState extends State<UploadCertificatesScreen> {
                                                 children: [
                                                   ElevatedButton(
                                                     onPressed:
-                                                        () => uploadFile(
+                                                        () => pickFile(
                                                           branchName,
                                                           type,
                                                         ),
@@ -225,15 +181,51 @@ class _UploadCertificatesScreenState extends State<UploadCertificatesScreen> {
                                                           const EdgeInsets.only(
                                                             top: 4,
                                                           ),
-                                                      child: Text(
-                                                        uploadedName,
-                                                        style: const TextStyle(
-                                                          fontSize: 12,
-                                                          color: Colors.grey,
-                                                        ),
-                                                        overflow:
-                                                            TextOverflow
-                                                                .ellipsis,
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: Text(
+                                                              uploadedName.name,
+                                                              style:
+                                                                  const TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color:
+                                                                        Colors
+                                                                            .grey,
+                                                                  ),
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                          IconButton(
+                                                            icon: const Icon(
+                                                              Icons.clear,
+                                                              size: 18,
+                                                              color:
+                                                                  Colors
+                                                                      .redAccent,
+                                                            ),
+                                                            tooltip:
+                                                                "Remove file",
+                                                            onPressed: () {
+                                                              setState(() {
+                                                                uploadedFiles[branchName]!
+                                                                    .remove(
+                                                                      type,
+                                                                    );
+                                                                if (uploadedFiles[branchName]!
+                                                                    .isEmpty) {
+                                                                  uploadedFiles
+                                                                      .remove(
+                                                                        branchName,
+                                                                      );
+                                                                }
+                                                              });
+                                                            },
+                                                          ),
+                                                        ],
                                                       ),
                                                     ),
                                                 ],
@@ -263,14 +255,46 @@ class _UploadCertificatesScreenState extends State<UploadCertificatesScreen> {
                               const Center(child: CircularProgressIndicator()),
                     );
 
-                    // Simulate delay or call your own API
-                    await Future.delayed(const Duration(seconds: 2));
+                    for (var branch in uploadedFiles.keys) {
+                      for (var fileType in uploadedFiles[branch]!.keys) {
+                        final file = uploadedFiles[branch]![fileType]!;
+                        final uri = Uri.parse(
+                          '${dotenv.env['API_URL']}/upload_certificate',
+                        );
 
-                    if (mounted) Navigator.pop(context); // Close progress
+                        final request =
+                            http.MultipartRequest('POST', uri)
+                              ..fields['user_id'] = widget.userId.toString()
+                              ..fields['file_type'] = fileType
+                              ..fields['bank'] = selectedBank ?? ''
+                              ..fields['branch'] = branch
+                              ..fields['month'] = selectedMonth ?? ''
+                              ..files.add(
+                                http.MultipartFile.fromBytes(
+                                  'file',
+                                  file.bytes!,
+                                  filename: file.name,
+                                ),
+                              );
+
+                        final response = await request.send();
+                        print(
+                          '⬆️ Uploaded $fileType for $branch → ${response.statusCode}',
+                        );
+                      }
+                    }
+
+                    if (mounted) Navigator.pop(context);
+
+                    setState(() {
+                      uploadedFiles.clear(); // ⬅️ Clear all selected files
+                    });
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("All uploaded files submitted."),
+                        content: Text(
+                          "All selected files uploaded successfully.",
+                        ),
                       ),
                     );
                   },
