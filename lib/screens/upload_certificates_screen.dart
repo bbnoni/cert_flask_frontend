@@ -59,250 +59,290 @@ class _UploadCertificatesScreenState extends State<UploadCertificatesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Extract unique bank names from the full 'bank,branch' strings
     final banks =
         widget.branches.map((b) => b.split(',')[0].trim()).toSet().toList();
 
-    // Filter branch pairs by selected bank
     final filteredBranches =
         widget.branches.where((b) {
           final parts = b.split(',');
           return parts.length >= 2 && parts[0].trim() == selectedBank;
         }).toList();
 
-    return Scaffold(
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: const [
-            DrawerHeader(
-              decoration: BoxDecoration(color: Colors.deepPurple),
-              child: Text(
-                'Spaklean',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-            ),
-            ListTile(leading: Icon(Icons.dashboard), title: Text('Dashboard')),
-            ListTile(
-              leading: Icon(Icons.upload_file),
-              title: Text('Upload Certificates'),
-            ),
-            ListTile(leading: Icon(Icons.history), title: Text('Audit Logs')),
-          ],
-        ),
-      ),
-      appBar: AppBar(title: const Text('Upload Certificates')),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 800;
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            DropdownButtonFormField<String>(
-              hint: const Text("Select Bank"),
-              value: selectedBank,
-              items:
-                  banks
-                      .map(
-                        (b) =>
-                            DropdownMenuItem<String>(value: b, child: Text(b)),
-                      )
-                      .toList(),
-              onChanged: (v) => setState(() => selectedBank = v),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              hint: const Text("Select Month"),
-              value: selectedMonth,
-              items:
-                  months
-                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                      .toList(),
-              onChanged: (v) => setState(() => selectedMonth = v),
-            ),
-            const SizedBox(height: 20),
-            if (selectedBank != null && selectedMonth != null)
-              Expanded(
-                child:
-                    filteredBranches.isEmpty
-                        ? const Center(child: Text("No branches found."))
-                        : ListView.builder(
-                          itemCount: filteredBranches.length,
-                          itemBuilder: (_, index) {
-                            final parts = filteredBranches[index].split(',');
-                            final branchName =
-                                parts.length > 1
-                                    ? parts[1].trim()
-                                    : 'Unknown Branch';
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.location_on_outlined),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          '$selectedBank, $branchName',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children:
-                                        ['JCC', 'DCC', 'JSDN'].map((type) {
-                                          final uploadedName =
-                                              uploadedFiles[branchName]?[type];
-                                          return Expanded(
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 4,
-                                                  ),
-                                              child: Column(
-                                                children: [
-                                                  ElevatedButton(
-                                                    onPressed:
-                                                        () => pickFile(
-                                                          branchName,
-                                                          type,
-                                                        ),
-                                                    child: Text('Upload $type'),
-                                                  ),
-                                                  if (uploadedName != null)
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                            top: 4,
-                                                          ),
-                                                      child: Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child: Text(
-                                                              uploadedName.name,
-                                                              style:
-                                                                  const TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    color:
-                                                                        Colors
-                                                                            .grey,
-                                                                  ),
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                          IconButton(
-                                                            icon: const Icon(
-                                                              Icons.clear,
-                                                              size: 18,
-                                                              color:
-                                                                  Colors
-                                                                      .redAccent,
-                                                            ),
-                                                            tooltip:
-                                                                "Remove file",
-                                                            onPressed: () {
-                                                              setState(() {
-                                                                uploadedFiles[branchName]!
-                                                                    .remove(
-                                                                      type,
-                                                                    );
-                                                                if (uploadedFiles[branchName]!
-                                                                    .isEmpty) {
-                                                                  uploadedFiles
-                                                                      .remove(
-                                                                        branchName,
-                                                                      );
-                                                                }
-                                                              });
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-              ),
-            if (uploadedFiles.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 20),
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.send),
-                  label: const Text("Final Submit"),
-                  onPressed: () async {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder:
-                          (_) =>
-                              const Center(child: CircularProgressIndicator()),
-                    );
-
-                    for (var branch in uploadedFiles.keys) {
-                      for (var fileType in uploadedFiles[branch]!.keys) {
-                        final file = uploadedFiles[branch]![fileType]!;
-                        final uri = Uri.parse(
-                          '${dotenv.env['API_URL']}/upload_certificate',
-                        );
-
-                        final request =
-                            http.MultipartRequest('POST', uri)
-                              ..fields['user_id'] = widget.userId.toString()
-                              ..fields['file_type'] = fileType
-                              ..fields['bank'] = selectedBank ?? ''
-                              ..fields['branch'] = branch
-                              ..fields['month'] = selectedMonth ?? ''
-                              ..files.add(
-                                http.MultipartFile.fromBytes(
-                                  'file',
-                                  file.bytes!,
-                                  filename: file.name,
-                                ),
-                              );
-
-                        final response = await request.send();
-                        print(
-                          '⬆️ Uploaded $fileType for $branch → ${response.statusCode}',
-                        );
-                      }
-                    }
-
-                    if (mounted) Navigator.pop(context);
-
-                    setState(() {
-                      uploadedFiles.clear(); // ⬅️ Clear all selected files
-                    });
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "All selected files uploaded successfully.",
-                        ),
-                      ),
-                    );
-                  },
+        final drawerContent = Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: const [
+              DrawerHeader(
+                decoration: BoxDecoration(color: Colors.deepPurple),
+                child: Text(
+                  'Spaklean',
+                  style: TextStyle(color: Colors.white, fontSize: 24),
                 ),
               ),
-          ],
-        ),
-      ),
+              ListTile(
+                leading: Icon(Icons.dashboard),
+                title: Text('Dashboard'),
+              ),
+              ListTile(
+                leading: Icon(Icons.upload_file),
+                title: Text('Upload Certificates'),
+              ),
+              ListTile(leading: Icon(Icons.history), title: Text('Audit Logs')),
+            ],
+          ),
+        );
+
+        return Scaffold(
+          appBar: AppBar(title: const Text('Upload Certificates')),
+          drawer: isDesktop ? null : drawerContent,
+          body: Row(
+            children: [
+              if (isDesktop) SizedBox(width: 250, child: drawerContent),
+
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        hint: const Text("Select Bank"),
+                        value: selectedBank,
+                        items:
+                            banks
+                                .map(
+                                  (b) => DropdownMenuItem<String>(
+                                    value: b,
+                                    child: Text(b),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (v) => setState(() => selectedBank = v),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        hint: const Text("Select Month"),
+                        value: selectedMonth,
+                        items:
+                            months
+                                .map(
+                                  (m) => DropdownMenuItem(
+                                    value: m,
+                                    child: Text(m),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (v) => setState(() => selectedMonth = v),
+                      ),
+                      const SizedBox(height: 20),
+
+                      if (selectedBank != null && selectedMonth != null)
+                        Expanded(
+                          child:
+                              filteredBranches.isEmpty
+                                  ? const Center(
+                                    child: Text("No branches found."),
+                                  )
+                                  : ListView.builder(
+                                    itemCount: filteredBranches.length,
+                                    itemBuilder: (_, index) {
+                                      final parts = filteredBranches[index]
+                                          .split(',');
+                                      final branchName =
+                                          parts.length > 1
+                                              ? parts[1].trim()
+                                              : 'Unknown Branch';
+
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 16,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.location_on_outlined,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    '$selectedBank, $branchName',
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children:
+                                                  ['JCC', 'DCC', 'JSDN'].map((
+                                                    type,
+                                                  ) {
+                                                    final uploadedName =
+                                                        uploadedFiles[branchName]?[type];
+                                                    return Expanded(
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 4,
+                                                            ),
+                                                        child: Column(
+                                                          children: [
+                                                            ElevatedButton(
+                                                              onPressed:
+                                                                  () => pickFile(
+                                                                    branchName,
+                                                                    type,
+                                                                  ),
+                                                              child: Text(
+                                                                'Upload $type',
+                                                              ),
+                                                            ),
+                                                            if (uploadedName !=
+                                                                null)
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsets.only(
+                                                                      top: 4,
+                                                                    ),
+                                                                child: Row(
+                                                                  children: [
+                                                                    Expanded(
+                                                                      child: Text(
+                                                                        uploadedName
+                                                                            .name,
+                                                                        style: const TextStyle(
+                                                                          fontSize:
+                                                                              12,
+                                                                          color:
+                                                                              Colors.grey,
+                                                                        ),
+                                                                        overflow:
+                                                                            TextOverflow.ellipsis,
+                                                                      ),
+                                                                    ),
+                                                                    IconButton(
+                                                                      icon: const Icon(
+                                                                        Icons
+                                                                            .clear,
+                                                                        size:
+                                                                            18,
+                                                                        color:
+                                                                            Colors.redAccent,
+                                                                      ),
+                                                                      tooltip:
+                                                                          "Remove file",
+                                                                      onPressed: () {
+                                                                        setState(() {
+                                                                          uploadedFiles[branchName]!.remove(
+                                                                            type,
+                                                                          );
+                                                                          if (uploadedFiles[branchName]!
+                                                                              .isEmpty) {
+                                                                            uploadedFiles.remove(
+                                                                              branchName,
+                                                                            );
+                                                                          }
+                                                                        });
+                                                                      },
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                        ),
+
+                      if (uploadedFiles.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 20),
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.send),
+                            label: const Text("Final Submit"),
+                            onPressed: () async {
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder:
+                                    (_) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                              );
+
+                              for (var branch in uploadedFiles.keys) {
+                                for (var fileType
+                                    in uploadedFiles[branch]!.keys) {
+                                  final file =
+                                      uploadedFiles[branch]![fileType]!;
+                                  final uri = Uri.parse(
+                                    '${dotenv.env['API_URL']}/upload_certificate',
+                                  );
+
+                                  final request =
+                                      http.MultipartRequest('POST', uri)
+                                        ..fields['user_id'] =
+                                            widget.userId.toString()
+                                        ..fields['file_type'] = fileType
+                                        ..fields['bank'] = selectedBank ?? ''
+                                        ..fields['branch'] = branch
+                                        ..fields['month'] = selectedMonth ?? ''
+                                        ..files.add(
+                                          http.MultipartFile.fromBytes(
+                                            'file',
+                                            file.bytes!,
+                                            filename: file.name,
+                                          ),
+                                        );
+
+                                  final response = await request.send();
+                                  print(
+                                    '⬆️ Uploaded $fileType for $branch → ${response.statusCode}',
+                                  );
+                                }
+                              }
+
+                              if (mounted) Navigator.pop(context);
+
+                              setState(() {
+                                uploadedFiles.clear();
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "All selected files uploaded successfully.",
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
