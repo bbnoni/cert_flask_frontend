@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_frontend/screens/auditor_home_screen.dart';
+import 'package:flutter_frontend/screens/home_screen.dart';
 import 'package:http/http.dart' as http;
 
 import 'attendance_screen.dart';
-import 'audit_summary_screen.dart';
-import 'upload_certificates_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
             context,
             MaterialPageRoute(
               builder:
-                  (_) => UploadCertificatesScreen(
+                  (_) => HomeScreen(
                     userId: data['id'],
                     branches: List<String>.from(data['branches'] ?? []),
                   ),
@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (role == 'auditor') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const AuditSummaryScreen()),
+            MaterialPageRoute(builder: (_) => const AuditorHomeScreen()),
           );
         } else {
           setState(() {

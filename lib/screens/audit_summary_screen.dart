@@ -49,9 +49,6 @@ class _AuditSummaryScreenState extends State<AuditSummaryScreen> {
         final summaryData = jsonDecode(summaryRes.body);
         final certSummaryData = jsonDecode(certSummaryRes.body);
 
-        print("📥 Summary data: $summaryData");
-        print("📥 Certificate summary data: $certSummaryData");
-
         setState(() {
           totalAttendance = summaryData['total_attendance_records'] ?? 0;
 
@@ -70,7 +67,6 @@ class _AuditSummaryScreenState extends State<AuditSummaryScreen> {
         });
       }
     } catch (e) {
-      print('🔥 Error loading summary: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to load summary data")),
       );
@@ -86,125 +82,75 @@ class _AuditSummaryScreenState extends State<AuditSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final drawerContent = Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: const [
-          DrawerHeader(
-            decoration: BoxDecoration(color: Colors.deepPurple),
-            child: Text(
-              'Spaklean',
-              style: TextStyle(color: Colors.white, fontSize: 24),
-            ),
-          ),
-          ListTile(leading: Icon(Icons.dashboard), title: Text('Dashboard')),
-          ListTile(
-            leading: Icon(Icons.remove_red_eye),
-            title: Text('View Certificates'),
-          ),
-          ListTile(leading: Icon(Icons.history), title: Text('Audit Logs')),
-        ],
-      ),
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 800;
-
-        return Scaffold(
-          appBar: AppBar(title: const Text('Audit Summary')),
-          drawer: isDesktop ? null : drawerContent,
-          body: Row(
+    return loading
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (isDesktop) SizedBox(width: 250, child: drawerContent),
-              Expanded(
-                child:
-                    loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '📍 Total Attendance Records: $totalAttendance',
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '📄 Total Certificates Uploaded: $totalCertificates',
-                              ),
-                              const SizedBox(height: 24),
-                              DropdownButtonFormField<String>(
-                                value: selectedMonth,
-                                decoration: const InputDecoration(
-                                  labelText: "Select Month",
-                                  border: OutlineInputBorder(),
-                                ),
-                                items:
-                                    months
-                                        .map(
-                                          (m) => DropdownMenuItem(
-                                            value: m,
-                                            child: Text(m),
-                                          ),
-                                        )
-                                        .toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedMonth = value!;
-                                    loading = true;
-                                  });
-                                  loadSummary();
-                                },
-                              ),
-                              const SizedBox(height: 20),
-                              const Divider(),
-                              const Text(
-                                "📊 Per-User Certificate Summary:",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 10),
-                              ...certificateSummary.map((entry) {
-                                final hasMissing = entry['has_missing'] == true;
-                                return Card(
-                                  color: hasMissing ? Colors.red[100] : null,
-                                  child: ListTile(
-                                    title: Text(entry['user']),
-                                    subtitle: Text("Month: ${entry['month']}"),
-                                    trailing: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text("JCC: ${entry['JCC']}"),
-                                        Text("DCC: ${entry['DCC']}"),
-                                        Text("JSDN: ${entry['JSDN']}"),
-                                      ],
-                                    ),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (_) =>
-                                                  UserCertificateDetailScreen(
-                                                    userId: entry['user_id'],
-                                                    userName: entry['user'],
-                                                    month: selectedMonth,
-                                                  ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              }).toList(),
-                            ],
-                          ),
-                        ),
+              Text('📍 Total Attendance Records: $totalAttendance'),
+              const SizedBox(height: 8),
+              Text('📄 Total Certificates Uploaded: $totalCertificates'),
+              const SizedBox(height: 24),
+              DropdownButtonFormField<String>(
+                value: selectedMonth,
+                decoration: const InputDecoration(
+                  labelText: "Select Month",
+                  border: OutlineInputBorder(),
+                ),
+                items:
+                    months
+                        .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                        .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedMonth = value!;
+                    loading = true;
+                  });
+                  loadSummary();
+                },
               ),
+              const SizedBox(height: 20),
+              const Divider(),
+              const Text(
+                "📊 Per-User Certificate Summary:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              ...certificateSummary.map((entry) {
+                final hasMissing = entry['has_missing'] == true;
+                return Card(
+                  color: hasMissing ? Colors.red[100] : null,
+                  child: ListTile(
+                    title: Text(entry['user']),
+                    subtitle: Text("Month: ${entry['month']}"),
+                    trailing: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text("JCC: ${entry['JCC']}"),
+                        Text("DCC: ${entry['DCC']}"),
+                        Text("JSDN: ${entry['JSDN']}"),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => UserCertificateDetailScreen(
+                                userId: entry['user_id'],
+                                userName: entry['user'],
+                                month: selectedMonth,
+                              ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
             ],
           ),
         );
-      },
-    );
   }
 }
