@@ -5,8 +5,14 @@ import 'upload_certificates_screen.dart';
 class HomeScreen extends StatefulWidget {
   final int userId;
   final List<String> branches;
+  final String userName;
 
-  const HomeScreen({super.key, required this.userId, required this.branches});
+  const HomeScreen({
+    super.key,
+    required this.userId,
+    required this.branches,
+    required this.userName,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -15,23 +21,41 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1; // 0: Dashboard, 1: Upload, 2: Audit
 
+  @override
+  void initState() {
+    super.initState();
+    print('HomeScreen userName: ${widget.userName}');
+  }
+
   Widget getBody() {
-    switch (_selectedIndex) {
-      case 0:
-        return const Center(child: Text("Dashboard coming soon!"));
-      case 1:
-        return UploadCertificatesScreen(
-          userId: widget.userId,
-          branches: widget.branches,
-        );
-      case 2:
-        return const Center(child: Text("Audit Logs coming soon!"));
-      default:
-        return UploadCertificatesScreen(
-          userId: widget.userId,
-          branches: widget.branches,
-        );
-    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Welcome message under Spaklean
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+          child: Text(
+            'Welcome, ${widget.userName}!',
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        Expanded(
+          child:
+              _selectedIndex == 0
+                  ? const Center(child: Text("Dashboard coming soon!"))
+                  : _selectedIndex == 1
+                  ? UploadCertificatesScreen(
+                    userId: widget.userId,
+                    branches: widget.branches,
+                  )
+                  : const Center(child: Text("Audit Logs coming soon!")),
+        ),
+      ],
+    );
   }
 
   Widget buildDrawer(BuildContext context, {bool isPermanent = false}) {
