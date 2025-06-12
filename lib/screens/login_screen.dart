@@ -162,115 +162,134 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blue[50],
       appBar: AppBar(
-        title: Text(isRegistering ? "Register" : "Login"),
+        title: Text(isRegistering ? "Register" : "Spaklean"),
         backgroundColor: Colors.blue,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.account_circle, size: 80, color: Colors.blue),
-            const SizedBox(height: 20),
-
-            // Email Field
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
-              ),
-              keyboardType: TextInputType.emailAddress,
+      body: Center(
+        child: SingleChildScrollView(
+          child: Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-            const SizedBox(height: 16),
+            child: Container(
+              width: 370, // Set max width for the form
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.account_circle, size: 70, color: Colors.blue[700]),
+                  const SizedBox(height: 18),
 
-            // Name Field (only for registration)
-            if (isRegistering) ...[
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                  // Email Field
+                  TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
 
-            // Password Field
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
-              ),
-            ),
-            const SizedBox(height: 20),
+                  // Name Field (only for registration)
+                  if (isRegistering) ...[
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Full Name',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
-            // Main Action Button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed:
-                    isLoading
-                        ? null
-                        : () {
-                          if (isRegistering) {
-                            register();
-                          } else {
-                            login();
-                          }
-                        },
-                child:
-                    isLoading
-                        ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                        : Text(
-                          isRegistering ? "Register" : "Login",
-                          style: const TextStyle(fontSize: 18),
+                  // Password Field
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.lock),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Main Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[700],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                      ),
+                      onPressed:
+                          isLoading
+                              ? null
+                              : () {
+                                if (isRegistering) {
+                                  register();
+                                } else {
+                                  login();
+                                }
+                              },
+                      child:
+                          isLoading
+                              ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : Text(
+                                isRegistering ? "Register" : "Login",
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Toggle between Login and Register
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        isRegistering = !isRegistering;
+                        nameController.clear();
+                        error = '';
+                      });
+                    },
+                    child: Text(
+                      isRegistering
+                          ? "Already have an account? Login"
+                          : "Need an account? Register",
+                    ),
+                  ),
+
+                  // Error Message
+                  if (error.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        error,
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-
-            // Toggle between Login and Register
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  isRegistering = !isRegistering;
-                  nameController.clear();
-                  error = '';
-                });
-              },
-              child: Text(
-                isRegistering
-                    ? "Already have an account? Login"
-                    : "Need an account? Register",
-              ),
-            ),
-
-            // Error Message
-            if (error.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  error,
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );

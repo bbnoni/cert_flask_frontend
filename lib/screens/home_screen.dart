@@ -110,7 +110,10 @@ class _HomeScreenState extends State<HomeScreen> {
         if (isDesktop) {
           // Desktop: permanent drawer
           return Scaffold(
-            appBar: AppBar(title: const Text('Certification App')),
+            appBar: AppBar(
+              leading: Container(),
+              title: const Text('Certification App'),
+            ),
             body: Row(
               children: [
                 SizedBox(
@@ -125,7 +128,10 @@ class _HomeScreenState extends State<HomeScreen> {
         } else {
           // Mobile: collapsible drawer
           return Scaffold(
-            appBar: AppBar(title: const Text('Certification App')),
+            appBar: AppBar(
+              leading: Container(),
+              title: const Text('Certification App'),
+            ),
             drawer: buildDrawer(context),
             body: getBody(),
           );
